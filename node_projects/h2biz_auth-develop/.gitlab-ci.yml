@@ -1,0 +1,27 @@
+image: docker:stable
+
+services:
+  - docker:dind
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  DEV_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$TAG-dev
+  QA_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$TAG-qa
+  ZINCAT_LIVE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$TAG-zincat_live
+  DEV_PORT: 7050
+  QA_PORT: 7000
+  ZINCAT_LIVE_PORT: 7070
+before_script:
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+build:
+  stage: build
+  script:
+    - docker build -t $DEV_TAG --build-arg PORT=$DEV_PORT --build-arg ENVIRONMENT=DEV .
+    - docker push $DEV_TAG
+    - docker build -t $QA_TAG --build-arg PORT=$QA_PORT --build-arg ENVIRONMENT=QA .
+    - docker push $QA_TAG
+    - docker build -t $ZINCAT_LIVE_TAG --build-arg PORT=$ZINCAT_LIVE_PORT --build-arg ENVIRONMENT=ZINCAT_LIVE .
+    - docker push $ZINCAT_LIVE_TAG
+  when: manual
